@@ -1,8 +1,4 @@
 import dataclasses
-import abc
-
-# TODO: protocol or abc
-class Language:
 
 
 @dataclasses.dataclass(frozen=True)
@@ -18,6 +14,5 @@ class TestResult:
 @dataclasses.dataclass(frozen=True)
 class TestCase:
     code_line: str
-    language: Language
     allocated_time: int | None = None
     allocated_memory: int | None = None
