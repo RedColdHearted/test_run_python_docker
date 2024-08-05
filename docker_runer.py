@@ -8,7 +8,7 @@ import docker.models.images
 
 from languages import LanguageBaseHandler
 from utils import TestResult, TestCase
-from exceptions import TestsError
+from errors import TestsError
 from constants import TO_MUCH_TESTS_CASES_ERROR_MESSAGE
 
 
@@ -17,6 +17,7 @@ def build_docker_image(
     dockerfile_path: pathlib.Path,
     image_tag: str,
 ) -> docker.models.images.Image:
+    """Return a docker image from docker engine."""
     try:
         images = client.images.list(filters={"reference": image_tag})
         if len(images):
@@ -37,6 +38,7 @@ def run_docker_container(
     docker_image: docker.models.images.Image,
     docker_container_name: str,
 ) -> docker.models.containers.Container | None:
+    """Return a docker container from docker engine."""
     try:
         containers = client.containers.list(
             filters={"name": docker_container_name},
@@ -67,6 +69,7 @@ def run_test_in_docker(
     docker_run_command: str,
     timeout: int,
 ) -> tuple[str, int, float, float | None]:
+    """Run a test in docker container."""
     start_time = time.perf_counter()
     exec_result = container.exec_run(
         docker_run_command.format(timeout, code_line)
@@ -90,6 +93,7 @@ def run_tests(
     language: type[LanguageBaseHandler],
     dockerfile_path: str = ".",
 ) -> list[TestResult]:
+    """Run tests in docker container and return a result."""
     client = docker.from_env()
     docker_image = build_docker_image(
         client,
@@ -111,38 +115,33 @@ def run_tests(
 
     for index, excepted_output in enumerate(excepted_tets_result):
         test_case = test_cases[index]
-        output, exec_code, timer, memory_usage = run_test_in_docker(
+        output, exec_code, completed_time, memory_usage = run_test_in_docker(
             container,
             test_case.code_line,
             docker_run_command=language.docker_run_command,
             timeout=test_case.allocated_time,
         )
+        order=index + 1,
+        error_massage = None
+        comparison = None
+        status="Complete",
+
         if exec_code != 0:
-            tests_results.append(
-                TestResult(
-                    order=index + 1,
-                    status="Error",
-                    error_massage=output,
-                ),
-            )
-            continue
+            status="Error",
+            error_massage=output,
+
         if excepted_output != output:
-            tests_results.append(
-                TestResult(
-                    order=index + 1,
-                    status="Fail",
-                    result=f"{excepted_tets_result[index]} != {output}",
-                    completed_time=timer,
-                    used_memory=memory_usage,
-                ),
-            )
-            continue
+            status = "Fail"
+            comparison = f"{excepted_tets_result[index]} != {output}",
+
         tests_results.append(
             TestResult(
-                order=index + 1,
-                status="Complete",
-                completed_time=timer,
-                used_memory=memory_usage,
+                order=order,
+                comparison=comparison,
+                status=status,
+                memory_usage=memory_usage,
+                completed_time=completed_time,
+                error_massage=error_massage,
             ),
         )
     return tests_results

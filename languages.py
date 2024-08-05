@@ -9,21 +9,21 @@ class LanguageBaseHandler(abc.ABC):
 
 
 class PythonHandler(LanguageBaseHandler):
-    """Python handler that run in docker."""
+    """Python handle for docker."""
     docker_image_name = "python_image:latest"
     docker_container_name = "python_container"
     docker_run_command = "timeout {}.1s python -c '{}'"
 
 
 class JavaScriptHandler(LanguageBaseHandler):
-    """JavaScript handler that run in docker."""
+    """JavaScript handler for docker."""
     docker_image_name = "js_image:latest"
     docker_container_name = "js_container"
     docker_run_command = "timeout {}.1s node -e '{}'"
 
 
 class CSHandler(LanguageBaseHandler):
-    """CSharp handler that run in docker."""
+    """CSharp handler for docker."""
     docker_image_name = "cs_image:latest"
     docker_container_name = "cs_container"
     # TODO: find a way to run cs code.

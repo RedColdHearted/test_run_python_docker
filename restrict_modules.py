@@ -1,32 +1,4 @@
-# Banned modules:
-# restricted_modules = [
-#     "os",
-#     "sys",
-#     "subprocess",
-#     "shutil",
-#     "socket",
-#     "configparser",
-#     "signal",
-#     "multiprocessing",
-#     "ctypes",
-#     "pickle",
-#     "marshal",
-#     "platform",
-#     "pathlib",
-#     "resource",
-#     "ssl",
-#     "base64",
-#     "calendar",
-#     "tarfile",
-#     "inspect",
-#     "treading",
-#     "async",
-#     "csv",
-#     "json",
-#     "zipfile",
-#     "http.server",
-#     ...
-# ]
+import types
 
 safe_modules = [
     "math",
@@ -37,14 +9,16 @@ safe_modules = [
     "re",
     "functools",
     "itertools",
-    "json",
-    "uuid",
     "usercustomize",
     "builtins",
 ]
 
+def restrict_functions() -> None:
+    """Wraps builtin functions during runtime.
 
-def restrict_functions():
+    Implemented by using docs: https://docs.python.org/3/library/site.html
+
+    """
     import builtins
     builtins.eval = lambda *args, **kwargs: (_ for _ in ()).throw(
         ImportError("Function 'eval' is restricted"),
@@ -60,13 +34,19 @@ def restrict_functions():
     )
 
 
-def restrict_modules():
+def restrict_modules() -> types.ModuleType:
+    """Wraps import during runtime.
+
+    Implemented by using docs: https://docs.python.org/3/library/site.html
+
+    """
     import builtins
     original_import = builtins.__import__
 
-    def custom_import(name, *args):
-        if name not in safe_modules:
-            raise ImportError(f"No such available module '{name}'.")
-        return original_import(name, *args)
+    def custom_import(module_name: str, *args: str):
+        """Custom import wrapper."""
+        if module_name not in safe_modules:
+            raise ImportError(f"No such available module '{module_name}'.")
+        return original_import(module_name, *args)
 
     builtins.__import__ = custom_import
